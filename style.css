@@ -1,0 +1,854 @@
+/* ==========================================================================
+   Melia — Miel de Mieles
+   Estilos propios. Complementan a Tailwind (CDN) con: la fuente Adelia,
+   la paleta oficial, el fondo de panal y los componentes que Tailwind no cubre.
+
+   Reglas del sistema
+   · El scroll es siempre el nativo del navegador. html y body nunca reciben
+     overflow: hidden, position: fixed ni height: 100vh.
+   · Colores: solo la paleta oficial de :root (y sus valores rgb con alfa).
+   · Radios: píldora (999px) para todo lo interactivo; --frame-radius
+     (28px móvil, 40px escritorio) para video, imágenes y tarjetas.
+   · Capas: .honeycomb-bg es fija y va primero en el DOM; main y footer son
+     position: relative (sin z-index) y se pintan encima. Con z-index solo:
+     skip-link 60, navegación 50 y fondo 0.
+   · Clases que añade script.js: .motion-ok y .reduce-motion (html),
+     .is-active (menú), .word (palabras animadas) y .roll-char (letras que ruedan).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Fuente y paleta oficial
+   -------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Adelia";
+  src: url("assets/adelia.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Paleta oficial de la marca */
+  --color-gold: #d39e48;                    /* Dorado miel: acentos principales */
+  --color-olive: #8e895e;                   /* Verde olivo: badges, bordes y detalles */
+  --color-earth: #60441e;                   /* Marrón tierra: tipografía y títulos */
+  --color-cream: #f5f1e7;                   /* Crema orgánico: fondo general */
+  --color-card-bg: rgba(255, 255, 255, 0.75); /* Tarjetas translúcidas (glassmorphism) */
+
+  /* Derivado: texto de los botones dorados */
+  --color-earth-deep: #3a2912;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --frame-radius: 28px;
+  --frame-inset: 0.75rem;
+  --frame-top: 4.75rem;
+
+  color-scheme: light;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --frame-radius: 40px;
+    --frame-inset: 1.5rem;
+    --frame-top: 5.5rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. Base: scroll nativo garantizado
+   -------------------------------------------------------------------------- */
+html,
+body {
+  background-color: #f5f1e7;
+  color: #60441e;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+}
+
+/* Contenedor principal y secciones a todo el ancho, en cualquier pantalla.
+   Solo el contenido interior (texto, fotos) tiene un ancho máximo, centrado. */
+main,
+section,
+footer {
+  width: 100%;
+  max-width: none;
+}
+
+/* Por encima del fondo fijo (orden del DOM, sin z-index: no aísla capas) */
+main,
+footer {
+  position: relative;
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-earth-deep);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-earth);
+  outline-offset: 4px;
+}
+
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+.skip-link {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 60;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  background: var(--color-earth);
+  color: var(--color-cream);
+  font-size: 0.875rem;
+  transform: translateY(-200%);
+  transition: transform 0.4s var(--ease-out);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* --------------------------------------------------------------------------
+   3. Fondo: malla de panal fija + hexágonos flotantes
+   -------------------------------------------------------------------------- */
+
+/* Capa fija en marca de agua. La malla interior es más alta que la pantalla
+   para que script.js la desplace despacio (parallax) sin dejar huecos. */
+.honeycomb-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.07;
+}
+
+.honeycomb-mesh {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 160%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='52' viewBox='0 0 90 51.96' preserveAspectRatio='none'%3E%3Cpath d='M0 25.98 15 0h30l15 25.98-15 25.98H15ZM60 25.98h30' fill='none' stroke='%2360441e' stroke-width='1.4'/%3E%3C/svg%3E");
+  background-size: 90px 52px;
+  will-change: transform;
+}
+
+/* Contenedor de los degradados SVG compartidos: no ocupa espacio */
+.svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Hexágonos decorativos: 2 por capítulo, detrás de la tarjeta */
+.hex-field {
+  position: absolute;
+  inset: 0;
+  overflow-x: clip;
+  pointer-events: none;
+}
+
+.hex {
+  position: absolute;
+  display: block;
+}
+
+.hex-shape {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  will-change: transform;
+}
+
+.hex--1 { top: 4%;  left: 5%;   width: clamp(4.5rem, 10vw, 9.5rem); }
+.hex--2 { top: 26%; right: 8%;  width: clamp(2.75rem, 4.5vw, 4.25rem); }
+.hex--3 { top: 8%;  right: 5%;  width: clamp(4rem, 9vw, 8.5rem); }
+.hex--4 { top: 30%; left: 10%;  width: clamp(2.5rem, 4vw, 3.75rem); }
+.hex--5 { top: 12%; left: 4%;   width: clamp(5rem, 11.5vw, 11rem); }
+.hex--6 { top: 3%;  right: 12%; width: clamp(2.5rem, 3.75vw, 3.5rem); }
+.hex--7 { top: 6%;  right: 4%;  width: clamp(4.5rem, 10vw, 10rem); }
+.hex--8 { top: 32%; left: 8%;   width: clamp(3rem, 5vw, 4.75rem); }
+
+/* --------------------------------------------------------------------------
+   4. Escala tipográfica de Adelia
+   Sus mayúsculas y trazos son mucho más altos que el em: los tamaños se
+   limitan también por la altura de pantalla y el interlineado es amplio.
+   -------------------------------------------------------------------------- */
+/* Eslogan del hero: grande, en dos líneas en escritorio */
+.hero-title {
+  font-family: "Adelia", cursive;
+  font-size: clamp(2.5rem, min(7.5vw, 12svh), 6.5rem);
+  line-height: 1.2;
+  padding-bottom: 0.1em;
+  text-wrap: balance;
+}
+
+@media (min-width: 640px) {
+  .hero-title {
+    max-width: 14ch;
+  }
+}
+
+.display-xl {
+  font-size: clamp(3rem, min(9vw, 12svh), 6.5rem);
+  line-height: 1.2;
+  padding-bottom: 0.1em;
+  text-wrap: balance;
+}
+
+/* Palabras que script.js separa para animarlas */
+.word {
+  display: inline-block;
+}
+
+/* --------------------------------------------------------------------------
+   5. Navegación tipo píldora
+   Fondo crema opaco: el logo tiene el mismo crema de fondo y se funde sin
+   dejar recuadro.
+   -------------------------------------------------------------------------- */
+.site-header {
+  position: fixed;
+  top: 0.75rem;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  padding-inline: 0.75rem;
+  pointer-events: none;
+}
+
+.nav-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  padding: 0.375rem 0.375rem 0.375rem 1rem;
+  border-radius: 999px;
+  background: var(--color-cream);
+  border: 1px solid rgb(142 137 94 / 0.25);
+  box-shadow:
+    0 12px 40px -20px rgb(96 68 30 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.6);
+  pointer-events: auto;
+}
+
+@media (min-width: 640px) {
+  .site-header {
+    top: 1rem;
+  }
+  .nav-pill {
+    gap: 0.5rem;
+  }
+}
+
+.nav-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-right: 0.5rem;
+}
+
+/* Recorte de "logo-melia.png" (683x588): solo la abeja con sus ramas,
+   región x 118-558 / y 14-336. La palabra "Melia" va como texto al lado. */
+.nav-logo-mark {
+  position: relative;
+  flex: none;
+  height: 2.5rem;
+  aspect-ratio: 440 / 322;
+  overflow: hidden;
+}
+
+.nav-logo-mark img {
+  position: absolute;
+  left: -26.818%;
+  top: -4.348%;
+  width: 155.227%;
+  max-width: none;
+  height: auto;
+}
+
+.nav-logo-text {
+  font-size: 1.75rem;
+  line-height: 1;
+  padding-top: 0.3rem;
+}
+
+.nav-links {
+  display: none;
+  align-items: center;
+  gap: 0.125rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .nav-links {
+    display: flex;
+  }
+}
+
+/* Móvil: logo algo más compacto para que el botón quepa completo */
+@media (max-width: 639px) {
+  .nav-pill {
+    padding-left: 0.75rem;
+  }
+  .nav-logo-mark {
+    height: 2.25rem;
+  }
+  .nav-logo-text {
+    font-size: 1.5rem;
+  }
+}
+
+/* Pantallas muy estrechas: solo la abeja */
+@media (max-width: 359px) {
+  .nav-logo-text {
+    display: none;
+  }
+}
+
+.nav-link {
+  display: inline-flex;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  color: rgb(96 68 30 / 0.85);
+  transition: color 0.3s var(--ease-out), background-color 0.3s var(--ease-out);
+}
+.nav-link:hover,
+.nav-link.is-active {
+  color: var(--color-earth);
+  background: rgb(142 137 94 / 0.14);
+}
+
+/* Progreso de lectura: línea dorada en la base de la píldora */
+.nav-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--color-gold);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. Botón píldora "miel" y letras que ruedan
+   -------------------------------------------------------------------------- */
+.btn-honey {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 999px;
+  background: var(--color-gold);
+  color: var(--color-earth-deep);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow:
+    0 14px 30px -14px rgb(211 158 72 / 0.9),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+  transition:
+    color 0.5s var(--ease-out),
+    box-shadow 0.5s var(--ease-out),
+    transform 0.25s var(--ease-out);
+}
+
+/* Relleno tierra que sube como miel oscura al pasar el cursor */
+.btn-honey::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--color-earth);
+  transform: translateY(102%);
+  transition: transform 0.6s var(--ease-out);
+}
+
+.btn-honey:hover {
+  color: var(--color-cream);
+  box-shadow:
+    0 18px 40px -16px rgb(96 68 30 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+.btn-honey:hover::before {
+  transform: translateY(0);
+}
+.btn-honey:active {
+  transform: scale(0.97);
+}
+
+.btn-honey--sm {
+  flex: none;
+  margin-left: 0.5rem;
+  padding: 0.75rem 1.15rem;
+  font-size: 0.875rem;
+}
+
+.btn-honey--lg {
+  padding: 1.2rem 2.1rem;
+  font-size: 1.0625rem;
+}
+
+.btn-icon {
+  width: 1.1em;
+  height: 1.1em;
+  transition: transform 0.5s var(--ease-out);
+}
+.btn-honey:hover .btn-icon {
+  transform: translateX(4px);
+}
+
+/* script.js divide cada .roll-label en letras; la copia de abajo es un text-shadow */
+.roll-label {
+  display: inline-flex;
+  overflow: hidden;
+  line-height: 1.3;
+  vertical-align: top;
+}
+
+.roll-char {
+  display: inline-block;
+  white-space: pre;
+  text-shadow: 0 1.3em currentColor;
+  transition: transform 0.6s var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 18ms);
+}
+
+a:hover .roll-char,
+a:focus-visible .roll-char {
+  transform: translateY(-1.3em);
+}
+
+/* --------------------------------------------------------------------------
+   7. Hero
+   -------------------------------------------------------------------------- */
+.hero {
+  position: relative;
+}
+
+.hero-stage {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  min-height: 34rem;
+}
+
+.hero-frame {
+  position: absolute;
+  top: var(--frame-top);
+  right: var(--frame-inset);
+  bottom: var(--frame-inset);
+  left: var(--frame-inset);
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--frame-radius);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
+.hero-reveal {
+  position: absolute;
+  inset: 0;
+  background: var(--color-earth);
+}
+
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 45% 50%;
+}
+
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgb(42 29 11 / 0.78) 0%,
+    rgb(42 29 11 / 0.34) 45%,
+    rgb(42 29 11 / 0) 72%
+  );
+}
+
+/* Abajo a la izquierda; el padding derecho deja libre el botón de pausa */
+.hero-caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 1.5rem 5rem 1.5rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .hero-caption {
+    padding: 2.5rem 7rem 2.5rem 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-caption {
+    padding: 3.5rem 8rem 3.5rem 3.5rem;
+  }
+}
+
+/* Pausa/reproducción: discreto, abajo a la derecha en todas las pantallas */
+.video-toggle {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  color: var(--color-cream);
+  background: rgb(245 241 231 / 0.14);
+  border: 1px solid rgb(245 241 231 / 0.35);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: background-color 0.3s var(--ease-out);
+}
+
+@media (min-width: 640px) {
+  .video-toggle {
+    right: 2.5rem;
+    bottom: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .video-toggle {
+    right: 3.5rem;
+    bottom: 3.5rem;
+  }
+}
+
+.video-toggle:hover {
+  background: rgb(245 241 231 / 0.28);
+}
+.video-toggle:focus-visible {
+  outline-color: var(--color-cream);
+}
+.video-toggle svg {
+  width: 1rem;
+  height: 1rem;
+}
+.video-toggle[data-state="playing"] .icon-play,
+.video-toggle[data-state="paused"] .icon-pause {
+  display: none;
+}
+
+/* Sin animación (JS desactivado o movimiento reducido): el texto va debajo */
+.hero-intro {
+  padding: 7rem 0 1rem;
+}
+
+/* Con animación: el texto se superpone y sube mientras el video se aleja */
+.motion-ok .hero-intro {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  pointer-events: none;
+}
+
+/* Estado inicial de la entrada (solo con animación). script.js lo anima;
+   si no arranca, index.html quita .motion-ok y todo queda visible. */
+.motion-ok .site-header,
+.motion-ok .hero-title,
+.motion-ok .video-toggle {
+  visibility: hidden;
+}
+
+.motion-ok .hero-reveal {
+  clip-path: inset(9% 9% 9% 9% round 32px);
+}
+
+/* --------------------------------------------------------------------------
+   8. Capítulos: tarjeta translúcida con número, título en Adelia y texto
+   -------------------------------------------------------------------------- */
+.story {
+  position: relative;
+}
+
+.chapter {
+  position: relative;
+  padding-block: clamp(5rem, 14vh, 9rem);
+}
+
+/* Glassmorphism: deja ver, desenfocados, el panal y los hexágonos de detrás */
+.chapter-card {
+  position: relative;
+  width: min(46rem, calc(100% - 2rem));
+  margin-inline: auto;
+  padding: clamp(2.25rem, 6vw, 4rem) clamp(1.5rem, 6vw, 4.5rem);
+  border-radius: var(--frame-radius);
+  background: var(--color-card-bg);
+  border: 1px solid rgb(142 137 94 / 0.22);
+  box-shadow:
+    0 40px 80px -50px rgb(96 68 30 / 0.4),
+    0 2px 6px -2px rgb(96 68 30 / 0.06),
+    inset 0 1px 0 rgb(255 255 255 / 0.9);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  backdrop-filter: blur(16px) saturate(1.15);
+  text-align: center;
+}
+
+/* Cap. IV, el desenlace: borde dorado */
+.chap-4 .chapter-card {
+  border-color: rgb(211 158 72 / 0.4);
+}
+
+.chapter-icon {
+  display: block;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 1.25rem;
+}
+
+/* Número del capítulo: subtítulo discreto en verde olivo. A 1.5rem cuenta
+   como texto grande, así el olivo exacto cumple el contraste AA. */
+.chap-num {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: 0.2em;
+  color: var(--color-olive);
+}
+
+/* Título del capítulo en Adelia */
+.chap-title-adelia {
+  margin: 0.75rem 0 0;
+  font-family: "Adelia", cursive;
+  font-size: clamp(2.5rem, 5.5vw, 4rem);
+  font-weight: 400;
+  line-height: 1.35;
+  padding-bottom: 0.1em;
+  color: var(--color-earth);
+  text-wrap: balance;
+}
+
+.chapter-text {
+  max-width: 36rem;
+  margin: 1.5rem auto 0;
+  font-size: clamp(1.25rem, 1rem + 1.1vw, 1.75rem);
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--color-earth);
+  text-wrap: pretty;
+}
+
+/* Imágenes: I ancha, II a sangre, III ancha, IV mockup oficial */
+.chapter-media {
+  margin: clamp(3.5rem, 10vh, 6.5rem) auto 0;
+  padding-inline: 1.5rem;
+}
+
+.chapter-media--wide {
+  max-width: 75rem;
+}
+
+.chapter-media--bleed {
+  padding-inline: var(--frame-inset);
+}
+
+.media-frame {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--frame-radius);
+  background: rgb(142 137 94 / 0.14);
+}
+
+@media (min-width: 640px) {
+  .chapter-media--wide .media-frame {
+    aspect-ratio: 16 / 10;
+  }
+  .chapter-media--bleed .media-frame {
+    aspect-ratio: 21 / 9;
+  }
+}
+
+/* La foto es más alta que el marco para dejar recorrido al parallax */
+.media-img {
+  position: absolute;
+  top: -8%;
+  left: 0;
+  width: 100%;
+  height: 116%;
+  object-fit: cover;
+}
+
+/* Mockup oficial: completo, esquinas redondeadas, sombra suave y un halo miel */
+.chapter-media--mockup {
+  position: relative;
+  isolation: isolate;
+  max-width: 62rem;
+}
+
+.chapter-media--mockup::before {
+  content: "";
+  position: absolute;
+  inset: 10% 12%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(211 158 72 / 0.5), rgb(211 158 72 / 0));
+  filter: blur(30px);
+}
+
+.melia-mockup-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--frame-radius);
+  box-shadow:
+    0 50px 90px -45px rgb(96 68 30 / 0.55),
+    0 18px 36px -22px rgb(96 68 30 / 0.35);
+}
+
+/* Hilo dorado que une un capítulo con el siguiente */
+.chapter-thread {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  height: clamp(5rem, 14vh, 9rem);
+}
+
+.thread-line {
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--color-gold), rgb(211 158 72 / 0));
+  transform-origin: top center;
+}
+
+/* --------------------------------------------------------------------------
+   9. Franja cinética: el eslogan avanza en horizontal con el scroll
+   El padding vertical deja sitio a los trazos altos de Adelia.
+   -------------------------------------------------------------------------- */
+.kinetic {
+  overflow: hidden;
+  overflow: clip;
+  padding-block: clamp(4rem, 12vh, 7rem) clamp(1rem, 4vh, 3rem);
+}
+
+.kinetic-track {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  width: max-content;
+  will-change: transform;
+}
+
+.kinetic-text {
+  padding-inline: 0.15em;
+  font-size: clamp(3.75rem, 11vw, 9.5rem);
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--color-gold);
+}
+
+.kinetic-sep {
+  flex: none;
+  width: clamp(1.75rem, 3.5vw, 3rem);
+  height: auto;
+}
+
+/* --------------------------------------------------------------------------
+   10. Footer / CTA
+   -------------------------------------------------------------------------- */
+.footer {
+  padding: clamp(8rem, 22vh, 12rem) 0 2rem;
+}
+
+/* Logo oficial completo. Su fondo es el mismo crema de la página;
+   darken lo funde también sobre la malla de panal. */
+.footer-logo {
+  width: clamp(9rem, 16vw, 12.5rem);
+  margin-inline: auto;
+}
+
+.footer-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: darken;
+}
+
+.footer-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 72rem;
+  margin: clamp(6rem, 16vh, 9rem) auto 0;
+  padding: 1.5rem 1.5rem 0;
+  border-top: 1px solid rgb(142 137 94 / 0.3);
+  font-size: 0.875rem;
+  text-align: center;
+  color: rgb(96 68 30 / 0.85);
+}
+
+@media (min-width: 640px) {
+  .footer-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
+}
+
+.footer-link {
+  padding: 0.25rem 0;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.5s var(--ease-out), color 0.3s;
+}
+.footer-link:hover {
+  color: var(--color-earth);
+  background-size: 100% 1px;
+}
+
+/* --------------------------------------------------------------------------
+   11. Movimiento reducido
+   Solo aplica si script.js añade .reduce-motion (interruptor
+   RESPECT_REDUCED_MOTION = true y el usuario lo pide en su sistema).
+   "none" (y no una duración mínima) para no convertir cada cambio de estilo
+   en una transición: eso retrasaría las mediciones de layout.
+   -------------------------------------------------------------------------- */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  transition: none !important;
+  animation: none !important;
+}
