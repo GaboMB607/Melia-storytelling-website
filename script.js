@@ -4,8 +4,10 @@
    ninguna librería intercepta la rueda del ratón ni el gesto táctil.
 
    Arquitectura
-   · Siempre activo: año del footer, letras que ruedan, control del video
-     y enlaces internos. No dependen de GSAP.
+   · Siempre activo: año del footer, letras que ruedan, control del video,
+     enlaces internos y botones de compra. No dependen de GSAP.
+   · Narración de voz: un audio por acto, sincronizado con ScrollTrigger y
+     activado solo cuando el usuario pulsa #audio-toggle.
    · Animaciones (hero fijado, tarjetas con títulos en Adelia que se escriben,
      revelados de imágenes, malla de panal, hexágonos flotantes, franja
      cinética y CTA magnético): se crean dentro de un gsap.context() sin
@@ -91,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!hasGSAP || reducedMotionApplies()) {
     root.classList.remove('motion-ok');
+    if (hasGSAP) initNarration();
     markReady();
     return;
   }
@@ -113,11 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
     teardownMotion();
   }
 
+  // La narración va fuera del contexto (funciona aunque fallen las animaciones)
+  // y después del hero fijado, para que sus posiciones incluyan el pin.
+  initNarration();
+  ScrollTrigger.refresh();
+
   // Las fuentes cambian alturas: recalcular posiciones cuando estén listas.
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => {
-      if (motionActive) ScrollTrigger.refresh();
-    });
+    document.fonts.ready.then(() => ScrollTrigger.refresh());
   }
 
   markReady();
@@ -586,6 +592,135 @@ document.addEventListener('DOMContentLoaded', () => {
         stagger: 0.1,
         scrollTrigger: { trigger: element, start: 'top 82%', end: 'bottom 50%', scrub: true },
       });
+  }
+
+  /* ------------------------------------------------------------------------
+     Narración de voz sincronizada con el scroll
+     · Empieza silenciada. #audio-toggle la activa (el clic es el gesto que
+       los navegadores exigen para reproducir audio).
+     · Cada sección dispara su audio al entrar (onEnter / onEnterBack) con un
+       fade-in de volumen. Nunca suenan dos voces a la vez.
+     · Al silenciar, el audio actual se detiene en el acto.
+     ------------------------------------------------------------------------ */
+  function initNarration() {
+    const toggle = $('#audio-toggle');
+    const tracks = $$('audio[data-narration]');
+    if (!toggle || !tracks.length) return;
+
+    const label = $('.audio-toggle-label', toggle);
+    const icon = $('.audio-toggle-icon', toggle);
+
+    let enabled = false;
+    let current = null;   // audio que está sonando
+    let activeId = null;  // sección visible ahora mismo
+
+    const trackFor = (id) => tracks.find((track) => track.dataset.narration === id);
+
+    // Detiene y rebobina cualquier voz en curso, sin dejar fades a medias.
+    function stopAllNarration() {
+      tracks.forEach((track) => {
+        if (track.fadeState) gsap.killTweensOf(track.fadeState);
+        track.pause();
+        track.currentTime = 0;
+      });
+      current = null;
+    }
+
+    function playNarration(id) {
+      const track = trackFor(id);
+      if (!enabled || !track) return;
+      if (track === current && !track.paused) return;
+
+      stopAllNarration();
+      current = track;
+
+      // Fade-in suave: se anima un objeto intermedio y se copia a track.volume.
+      track.fadeState = { volume: 0 };
+      track.volume = 0;
+      track.play()
+        .then(() => {
+          gsap.to(track.fadeState, {
+            volume: 1,
+            duration: 1.4,
+            ease: 'power1.out',
+            onUpdate: () => { track.volume = track.fadeState.volume; },
+          });
+        })
+        .catch(() => {});
+    }
+
+    // iOS solo deja reproducir más tarde los audios "desbloqueados" dentro
+    // de un clic: se arrancan en silencio y se detienen al instante.
+    function unlockTracks() {
+      tracks.forEach((track) => {
+        if (track === current) return;
+        track.muted = true;
+        track.play()
+          .then(() => {
+            if (track !== current) {
+              track.pause();
+              track.currentTime = 0;
+            }
+            track.muted = false;
+          })
+          .catch(() => { track.muted = false; });
+      });
+    }
+
+    function render() {
+      toggle.setAttribute('aria-pressed', String(enabled));
+      label.textContent = enabled ? 'Narración activa' : 'Activar voz';
+      icon.textContent = enabled ? '🔊' : '🔇';
+    }
+
+    toggle.addEventListener('click', () => {
+      enabled = !enabled;
+      render();
+
+      if (enabled) {
+        if (activeId) playNarration(activeId);
+        unlockTracks();
+      } else {
+        stopAllNarration();
+      }
+    });
+
+    tracks.forEach((track) => {
+      track.addEventListener('ended', () => {
+        if (track === current) current = null;
+      });
+    });
+
+    const onSection = (id) => ({
+      onEnter: () => { activeId = id; playNarration(id); },
+      onEnterBack: () => { activeId = id; playNarration(id); },
+      onLeave: () => { if (activeId === id) activeId = null; },
+      onLeaveBack: () => { if (activeId === id) activeId = null; },
+    });
+
+    // Introducción "Treinta años, gota a gota": mientras sube sobre el video fijado.
+    if (trackFor('inicio')) {
+      ScrollTrigger.create({
+        start: () => window.innerHeight * 0.3,
+        endTrigger: '#capitulo-1',
+        end: 'top center',
+        ...onSection('inicio'),
+      });
+    }
+
+    // Un acto por capítulo
+    $$('.chapter').forEach((chapter) => {
+      if (!trackFor(chapter.id)) return;
+      ScrollTrigger.create({
+        trigger: chapter,
+        start: 'top center',
+        end: 'bottom center',
+        ...onSection(chapter.id),
+      });
+    });
+
+    toggle.hidden = false;
+    render();
   }
 
   /* ------------------------------------------------------------------------

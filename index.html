@@ -62,7 +62,7 @@
   <!--
     Créditos
     Fotografías (Licencia Unsplash): Annie Spratt (cap. I), Aedrian Salazar (cap. II),
-    snap wander (cap. III). Cap. IV: mockup oficial de Melia.
+    snap wander (cap. III). Cap. IV: fotografía oficial de Melia Reina.
     Iconos de capítulo: Hugeicons (MIT). Iconos de botones: Phosphor Icons (MIT).
   -->
 
@@ -289,7 +289,7 @@
         </div>
 
         <figure class="chapter-media chapter-media--mockup">
-          <img src="assets/img/cap4-frasco-melia.jpg" alt="Miel Melia Frasco Oficial" class="melia-mockup-img" width="1447" height="1087" loading="lazy" decoding="async">
+          <img src="assets/img/cap4-frasco-reina.jpg" alt="Frasco de Miel Melia Reina, miel multifloral" class="melia-mockup-img" width="1448" height="1086" loading="lazy" decoding="async">
         </figure>
       </article>
     </section>
@@ -341,6 +341,32 @@
       <a href="#inicio" class="footer-link">Volver al inicio</a>
     </div>
   </footer>
+
+  <!-- ================= NARRACIÓN DE VOZ (se activa con el botón) ================= -->
+  <!-- Oculto hasta que script.js prepara la sincronización con el scroll -->
+  <button type="button" id="audio-toggle" class="audio-toggle" aria-pressed="false" hidden>
+    <span class="audio-toggle-label">Activar voz</span>
+    <span class="audio-toggle-icon" aria-hidden="true">🔇</span>
+  </button>
+
+  <!-- Un audio por acto. data-narration = id de la sección que lo dispara -->
+  <div class="narration" hidden>
+    <audio preload="none" data-narration="inicio">
+      <source src="assets/audio/30%20a%C3%B1os%20gota%20a%20gota.ogg" type="audio/ogg">
+    </audio>
+    <audio preload="none" data-narration="capitulo-1">
+      <source src="assets/audio/cap1-zumbido.ogg" type="audio/ogg">
+    </audio>
+    <audio preload="none" data-narration="capitulo-2">
+      <source src="assets/audio/cap2-carbon.ogg" type="audio/ogg">
+    </audio>
+    <audio preload="none" data-narration="capitulo-3">
+      <source src="assets/audio/cap3-tierra.ogg" type="audio/ogg">
+    </audio>
+    <audio preload="none" data-narration="capitulo-4">
+      <source src="assets/audio/cap4-renacer.ogg" type="audio/ogg">
+    </audio>
+  </div>
 
   <!-- ================= SCRIPTS (al final del body, en este orden) ================= -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>

@@ -11,7 +11,7 @@
      (28px móvil, 40px escritorio) para video, imágenes y tarjetas.
    · Capas: .honeycomb-bg es fija y va primero en el DOM; main y footer son
      position: relative (sin z-index) y se pintan encima. Con z-index solo:
-     skip-link 60, navegación 50 y fondo 0.
+     skip-link 60, navegación y botón de narración 50, y fondo 0.
    · Clases que añade script.js: .motion-ok y .reduce-motion (html),
      .is-active (menú), .word (palabras animadas) y .roll-char (letras que ruedan).
    ========================================================================== */
@@ -518,11 +518,12 @@ a:focus-visible .roll-char {
   }
 }
 
-/* Pausa/reproducción: discreto, abajo a la derecha en todas las pantallas */
+/* Pausa/reproducción: discreto, abajo a la derecha en todas las pantallas.
+   bottom: 4rem deja libre el botón flotante de narración (#audio-toggle). */
 .video-toggle {
   position: absolute;
   right: 1rem;
-  bottom: 1rem;
+  bottom: 4rem;
   display: grid;
   place-items: center;
   width: 3rem;
@@ -539,14 +540,12 @@ a:focus-visible .roll-char {
 @media (min-width: 640px) {
   .video-toggle {
     right: 2.5rem;
-    bottom: 2.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .video-toggle {
     right: 3.5rem;
-    bottom: 3.5rem;
   }
 }
 
@@ -709,7 +708,9 @@ a:focus-visible .roll-char {
   object-fit: cover;
 }
 
-/* Mockup oficial: completo, esquinas redondeadas, sombra suave y un halo miel */
+/* Fotografía oficial (Melia Reina): esquinas redondeadas, sombra suave y un
+   halo miel. El marco fija la proporción y object-fit: cover la llena sin
+   deformarla; en móvil el encuadre es cuadrado y centrado en el frasco. */
 .chapter-media--mockup {
   position: relative;
   isolation: isolate;
@@ -730,10 +731,20 @@ a:focus-visible .roll-char {
   display: block;
   width: 100%;
   height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: 50% 45%;
   border-radius: var(--frame-radius);
+  border: 1px solid rgb(211 158 72 / 0.25);
   box-shadow:
     0 50px 90px -45px rgb(96 68 30 / 0.55),
     0 18px 36px -22px rgb(96 68 30 / 0.35);
+}
+
+@media (min-width: 640px) {
+  .melia-mockup-img {
+    aspect-ratio: 4 / 3;
+  }
 }
 
 /* Hilo dorado que une un capítulo con el siguiente */
@@ -840,7 +851,72 @@ a:focus-visible .roll-char {
 }
 
 /* --------------------------------------------------------------------------
-   11. Movimiento reducido
+   11. Botón flotante de narración (#audio-toggle)
+   Cristal oscuro para que el texto crema se lea sobre cualquier fondo.
+   -------------------------------------------------------------------------- */
+.audio-toggle {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-gold);
+  background: rgb(58 41 18 / 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  color: var(--color-cream);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  box-shadow: 0 14px 34px -16px rgb(58 41 18 / 0.6);
+  transition:
+    background-color 0.3s var(--ease-out),
+    box-shadow 0.3s var(--ease-out),
+    transform 0.25s var(--ease-out);
+}
+
+/* "display: inline-flex" ganaría al atributo hidden: se restablece aquí */
+.audio-toggle[hidden] {
+  display: none;
+}
+
+.audio-toggle:hover {
+  background: rgb(58 41 18 / 0.72);
+}
+
+.audio-toggle:active {
+  transform: scale(0.97);
+}
+
+.audio-toggle:focus-visible {
+  outline-color: var(--color-gold);
+}
+
+/* Activo: halo dorado */
+.audio-toggle[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 4px rgb(211 158 72 / 0.28),
+    0 14px 34px -16px rgb(58 41 18 / 0.6);
+}
+
+.audio-toggle-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (min-width: 640px) {
+  .audio-toggle {
+    right: 1.5rem;
+    bottom: 1.5rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   12. Movimiento reducido
    Solo aplica si script.js añade .reduce-motion (interruptor
    RESPECT_REDUCED_MOTION = true y el usuario lo pide en su sistema).
    "none" (y no una duración mínima) para no convertir cada cambio de estilo
